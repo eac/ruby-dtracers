@@ -1,0 +1,114 @@
+#!/usr/bin/env ruby
+
+stats_path = ARGV[0].to_s
+if !File.exist?(stats_path)
+  puts "File not found: #{stats_path}. First argument must be an output file with allocation data."
+  puts "Expected file format: count class path:line_number"
+  exit
+end
+
+# Parses dtrace output:
+# <count> <klass> <path>:<line_number>
+# e.g.: 13230 Array /Users/eric/.rvm/gems/ruby-2.0.0-p195/gems/cancan-1.6.7/lib/cancan/ability.rb:248
+class Allocation
+  GEM_PATTERN    = /p195.*?\/gems\/(.*?)\//
+  if !ENV['APP_PATH']
+    puts "Need to define the app path. Example: export APP_PATH=/my/to/my/project"
+    exit
+  end
+  APP_PATTERN    = /\/#{Regexp.escape(ENV['APP_PATH'])}\/(.*?)\.(?:rb|erb)/
+  STDLIB_PATTERN = /\/lib\/ruby\/\d\.\d\.\d\/(.*?)\.rb/
+
+  PACKAGE_PATTERN = Regexp.union(GEM_PATTERN, APP_PATTERN, STDLIB_PATTERN)
+
+  def initialize(raw)
+    @raw = raw
+  end
+
+  def count
+    parts[0].to_i
+  end
+
+  def klass
+    parts[1] =~ /(.*?)\(/
+    $1
+  end
+
+  def length
+    parts[1] =~ /\((\d+)\)/
+    ($1 || 1).to_i
+  end
+
+  def package
+    parts[2] =~ PACKAGE_PATTERN
+    $1 || $2 || $3 #|| "Missing pattern: #{parts[2]}"
+  end
+
+  def parts
+    @parts ||= @raw.split(' ')
+  end
+
+  def file
+    parts[2].to_s.split(':').first
+  end
+
+end
+
+package_by_count  = {}
+package_by_length = {}
+files_by_count    = {}
+
+File.read(stats_path).each_line do |line|
+  allocation = Allocation.new(line)
+  package_by_count[allocation.package] ||= 0
+  package_by_count[allocation.package]  += allocation.count
+
+  package_by_length[allocation.package] ||= 0
+  package_by_length[allocation.package]  += allocation.length
+
+  files_by_count[allocation.file] ||= 0
+  files_by_count[allocation.file]  += allocation.count
+end
+
+def output(stats)
+  stats.sort_by { |_, value| value }.each do |package, value|
+    puts "#{value} #{package}"
+  end
+end
+
+case ARGV[1]
+when "--file"
+  puts "Files by allocation count"
+  puts "----------------------------"
+  output(files_by_count)
+when "--line"
+  puts "Lines by allocation count"
+  puts "----------------------------"
+  compact_files_by_count = {}
+  File.read(stats_path).each_line do |line|
+    allocation = Allocation.new(line)
+    compact_files_by_count[allocation.parts[2]] = allocation.count
+  end
+  output(compact_files_by_count)
+when "--size"
+  puts "Packages by length (e.g. size of string, # members in a collection"
+  puts "----------------------------"
+  output(package_by_length)
+  puts "Total: #{package_by_length.values.inject(:+)}"
+  puts "\n\n"
+when "--package"
+  puts "Packages by allocation count"
+  puts "----------------------------"
+  output(package_by_count)
+  puts "Total: #{package_by_count.values.inject(:+)}"
+  puts "\n\n"
+else
+  puts "Options:"
+  puts "--package: Allocations by package"
+  puts "--file: Allocations by file"
+  puts "--line: Allocations by line (most detailed)"
+  puts "--size: Allocated size per package"
+  puts ""
+  puts "Example"
+  puts "./browse_allocations #{ARGV[0]} --package"
+end
