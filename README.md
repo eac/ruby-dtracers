@@ -1,3 +1,5 @@
+A collection of dtrace scripts and analysis tools for use with dtrace on Ruby 2. Contributions welcome.
+
 ## Scripts
 
 ### Allocate.d
@@ -102,6 +104,10 @@ GRAPHER=~/FlameGraph/flamegraph.pl ./analyze/generate_flamegraph http.out
 Due to inaccurate return probes in Ruby (or perhaps bugs in this script) the output isn't 100% accurate. 
 It does give a fairly good sense of the most heavily used code paths, 
 and is a good guide for where to focus more accurate profiling methods (e.g. object allocations).
+
+## Tips
+* Often the biggest wins will come from reducing object allocations.
+* For applications, try to mimic your production environment as much as possible. This includes things like setting the correct log level, sending a couple warmup requests, and making sure your app isn't in some error state (like throwing a bunch of memcached errors).
 
 ## References
 * http://tenderlovemaking.com/2011/12/05/profiling-rails-startup-with-dtrace.html
