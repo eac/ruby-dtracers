@@ -14,9 +14,11 @@ if !grapher
 end
 grapher.chomp!
 
-name    = File.basename(output)
-command = "ruby flame_collapse.rb #{output} | #{grapher} > #{name}.html"
-puts command
+collapser = File.join(File.dirname(__FILE__), 'flame_collapse.rb')
+name      = File.basename(output)
+command   = "ruby #{collapser} #{output} | #{grapher} > #{name}.html"
+
+puts "Running: #{command}"
 system(command)
 
 `open #{name}.html`
