@@ -1,5 +1,49 @@
 #!/usr/bin/env ruby
 
+# Easier browsing of allocate.d output.
+
+# Usage:
+# APP_PATH=zendesk/zendesk ./browse_allocations cached.out
+# Options:
+# --package: Allocations by package
+# --file: Allocations by file
+# --line: Allocations by line (most detailed)
+# --size: Allocated size per package
+#
+# Examples:
+#
+# APP_PATH=zendesk/zendesk ./browse_allocations cached.out --package
+# Packages by allocation count
+# ----------------------------
+# 93976 active_record_shards-2.7.4
+# 110082 actionpack-2.3.18
+# 460727 treetop-1.4.14
+# 547922 activerecord-2.3.18
+# 590897 activesupport-2.3.18
+# 880476 mail-2.5.4
+# Total: 3419286
+#
+#
+# APP_PATH=zendesk/zendesk ./browse_allocations cached.out --line
+# Lines by allocation count
+# ----------------------------
+# 33600 /Users/eric/.rvm/gems/ruby-2.0.0-p195/gems/activerecord-2.3.18/lib/active_record/attribute_methods.rb:1
+# 35868 /Users/eric/.rvm/gems/ruby-2.0.0-p195/gems/active_record_shards-2.7.4/lib/active_record_shards/shard_selection.rb:37
+# 41150 /Users/eric/.rvm/gems/ruby-2.0.0-p195/gems/mail-2.5.4/lib/mail/header.rb:273
+# 85400 /Users/eric/.rvm/gems/ruby-2.0.0-p195/gems/treetop-1.4.14/lib/treetop/runtime/compiled_parser.rb:100
+# 100042 /Users/eric/.rvm/gems/ruby-2.0.0-p195/gems/treetop-1.4.14/lib/treetop/runtime/compiled_parser.rb:110
+# 104201 /Users/eric/.rvm/gems/ruby-2.0.0-p195/gems/treetop-1.4.14/lib/treetop/runtime/compiled_parser.rb:89
+# 186065 /Users/eric/.rvm/gems/ruby-2.0.0-p195/gems/activesupport-2.3.18/lib/active_support/memoizable.rb:32
+#
+#
+# ruby-dtracers [master]$ APP_PATH=zendesk/zendesk ./browse_allocations cached.out --file
+# Files by allocation count
+# ----------------------------
+# 221683 /Users/eric/.rvm/gems/ruby-2.0.0-p195/gems/activerecord-2.3.18/lib/active_record/base.rb
+# 403442 /Users/eric/.rvm/gems/ruby-2.0.0-p195/gems/activesupport-2.3.18/lib/active_support/memoizable.rb
+# 433577 /Users/eric/.rvm/gems/ruby-2.0.0-p195/gems/treetop-1.4.14/lib/treetop/runtime/compiled_parser.rb
+# 604118 /Users/eric/.rvm/gems/ruby-2.0.0-p195/gems/mail-2.5.4/lib/mail/parsers/rfc2822.rb
+#
 stats_path = ARGV[0].to_s
 if !File.exist?(stats_path)
   puts "File not found: #{stats_path}. First argument must be an output file with allocation data."
