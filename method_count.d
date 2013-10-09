@@ -1,6 +1,6 @@
 #!/usr/sbin/dtrace -qs
 
-/*
+/***
   Columns: Count, Class, file:line_number
   Sample:
      149 Net::BufferedIO readuntil /Users/eric/.rvm/rubies/ruby-2.0.0-p195/lib/ruby/2.0.0/net/protocol.rb:131
@@ -9,7 +9,7 @@
      165 String slice! /Users/eric/.rvm/rubies/ruby-2.0.0-p195/lib/ruby/2.0.0/net/protocol.rb:172
      236 String [] /Users/eric/.rvm/rubies/ruby-2.0.0-p195/lib/ruby/2.0.0/net/http/response.rb:56
     1980 Symbol == /Users/eric/.rvm/rubies/ruby-2.0.0-p195/lib/ruby/2.0.0/net/http.rb:885
-*/
+***/
 
 /* classname, methodname, filename, lineno */
 ruby*:::*method-entry
