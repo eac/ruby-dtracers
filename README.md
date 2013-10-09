@@ -87,7 +87,24 @@ Object allocations tend to point to the most expensive Ruby code.
  Total: 3419286
 ```
 
+### Flamegraph
+Flamegraphs are a good starting point when trying to get a sense of where the application is spending its time.
+In the following example, we can see that most of `Faraday::Connection#get` time is spent making an HTTP call.
+
+```
+ Usage:
+./flamegraph.d -p <pid> -o http.out
+GRAPHER=~/FlameGraph/flamegraph.pl ./analyze/generate_flamegraph http.out
+```
+
+![example flamegraph](/examples/flamegraph.png)
+
+Due to inaccurate return probes in Ruby (or perhaps bugs in this script) the output isn't 100% accurate. 
+It does give a fairly good sense of the most heavily used code paths, 
+and is a good guide for where to focus more accurate profiling methods (e.g. object allocations).
+
 ## References
 * http://tenderlovemaking.com/2011/12/05/profiling-rails-startup-with-dtrace.html
 * https://github.com/ruby/ruby/tree/trunk/test/dtrace
 * https://bugs.ruby-lang.org/projects/ruby/wiki/DTraceProbes
+* https://github.com/brendangregg/FlameGraph
