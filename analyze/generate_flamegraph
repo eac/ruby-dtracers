@@ -12,13 +12,12 @@ if !grapher
   puts "Flamegraph generater can be downloaded at: git@github.com:brendangregg/FlameGraph.git"
   exit
 end
-grapher.chomp!
 
 collapser = File.join(File.dirname(__FILE__), 'flame_collapse.rb')
 name      = File.basename(output)
-command   = "ruby #{collapser} #{output} | #{grapher} > #{name}.html"
+command   = "ruby #{collapser} #{output} | #{grapher.chomp} > #{name}.html"
 
 puts "Running: #{command}"
-system(command)
-
-`open #{name}.html`
+if system(command)
+  `open #{name}.html`
+end
