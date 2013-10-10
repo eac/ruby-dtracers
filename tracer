@@ -1,0 +1,95 @@
+#!/usr/bin/env ruby
+
+# Simplifies the pattern of warming up, tracing, then killing a proccess.
+
+# Sample usage:
+# Unicorn is used in this example, but this works with any process.
+
+# Boot unicorn_rails worker. (make sure worker_processes=1 in your config file.)
+# $ bundle exec unicorn_rails
+#
+# Runs allocate.d for a web request to api/v2/users.json:
+# $ sudo CONFIG_PATH=~/.unicorn.dtrace.yml ./tracer allocate api/v2/users.json
+#   dtracing with: ~/projects/ruby-dtracers/allocate.d
+#   Warmup:
+#   curl -u user@example.com:123456 http://dev.localhost:3001/api/v2/users.json
+#   curl -u user@example.com:123456 http://dev.localhost:3001/api/v2/users.json
+#   Done
+#
+# $ tail allocate.out
+#   28702 Array(3) ruby-2.0.0-p195/gems/mongo-1.7.1/lib/mongo/util/core_ext.rb:46
+#   33000 Hash(0) ruby-2.0.0-p195/gems/treetop-1.4.14/lib/treetop/runtime/compiled_parser.rb:66
+#   33600 String(4) ruby-2.0.0-p195/gems/activerecord-2.3.18/lib/active_record/attribute_methods.rb:1
+#   35868 Array(3) ruby-2.0.0-p195/gems/active_record_shards-2.7.4/lib/active_record_shards/shard_selection.rb:37
+#
+#
+# $ cat ~/.unicorn.dtrace.yml
+# ---
+# :dtracers_path:   ~/projects/ruby-dtracers
+# :process_pattern: unicorn_rails worker
+# :command:         curl -u user@example.com:123456 http://dev.localhost:3001/%s
+#
+require 'yaml'
+
+class Tracer
+
+  attr_reader :dtrace
+
+  def self.from_config(path)
+    yaml = YAML.load_file(path)
+    new(yaml)
+  end
+
+  attr_reader :command
+
+  def initialize(config)
+    @dtracers_path   = config[:dtracers_path]
+    @process_pattern = config[:process_pattern]
+    @command         = config[:command] % ARGV[1,4]
+    @script_name     = ARGV[0]
+    @dtrace_script   = "#{@dtracers_path}/#{@script_name}.d"
+  end
+
+  def run
+    puts "dtracing with: #{@dtrace_script}"
+    puts "Warmup:"
+    2.times { warmup }
+    remove_old_dtrace_output
+    trace
+    system(command)
+    cleanup
+    puts "Done"
+  end
+
+  def cleanup
+    kill(process)
+    sleep(0.05)
+    kill(@dtrace)
+  end
+
+  def remove_old_dtrace_output
+    puts "\nPurging old trace output"
+    `rm -f #{@script_name}.out`
+  end
+
+  def warmup
+    puts command
+    system(command)
+    puts ""
+  end
+
+  def kill(pid)
+    Process.kill("TERM", pid.to_i)
+  end
+
+  def process
+    @process ||= `ps aux | grep "#{@process_pattern}" | grep -v grep | tail -n 1 | awk '{ print $2 }'`.chomp
+  end
+
+  def trace
+    @dtrace = spawn("#{@dtrace_script} -p #{process} -o #{@script_name}.out")
+  end
+
+end
+
+Tracer.from_config(ENV['CONFIG_PATH']).run
