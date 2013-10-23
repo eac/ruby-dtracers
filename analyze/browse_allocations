@@ -55,7 +55,7 @@ end
 # <count> <klass> <path>:<line_number>
 # e.g.: 13230 Array /Users/eric/.rvm/gems/ruby-2.0.0-p195/gems/cancan-1.6.7/lib/cancan/ability.rb:248
 class Allocation
-  GEM_PATTERN    = /p195.*?\/gems\/(.*?)\//
+  GEM_PATTERN    = /p.*?\/gems\/(.*?)\//
   if !ENV['APP_PATH']
     puts "Need to define the app path. Example: export APP_PATH=/my/to/my/project"
     exit

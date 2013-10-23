@@ -63,12 +63,12 @@ class Tracer
 
   def cleanup
     kill(process)
-    sleep(0.05)
+    sleep(0.5)
     kill(@dtrace)
   end
 
   def remove_old_dtrace_output
-    puts "\nPurging old trace output"
+    puts "\nPurging old trace output: #{@script_name}"
     `rm -f #{@script_name}.out`
   end
 
@@ -92,4 +92,15 @@ class Tracer
 
 end
 
-Tracer.from_config(ENV['CONFIG_PATH']).run
+config_path = ENV['CONFIG_PATH']
+if !config_path
+  puts "Need to specify CONFIG_PATH. e.g.: CONFIG_PATH=~/.unicorn.dtrace.yml"
+  exit
+end
+
+if !File.exist?(config_path)
+  puts "#{config_path} does not exist"
+  exit
+end
+
+Tracer.from_config(config_path).run
